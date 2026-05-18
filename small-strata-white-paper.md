@@ -40,7 +40,7 @@ All standard binary endpoint methods used in Merck oncology SAPs are robust to s
 ## Notes
 
 - **CMH OR** is the most robust — Type I error within [0.043, 0.054] across all scenarios.
-- **CMH RR** with stratified Greenland-Robins variance shows slight Type I inflation at low event rates (0.081 balanced, 10%), but this is a property of the RR scale for rare events, not sparsity.
+- **CMH RR** with stratified Greenland-Robins variance shows slight Type I inflation at low event rates (0.081 in the balanced design at 10% event rate). **Pooling would NOT address this inflation** — the inflation is highest in the balanced design (no small strata at all) and lowest in the most extreme sparsity scenarios. This is an inherent property of the risk ratio scale at low event rates, not a small-strata problem. If Type I error is a concern, CMH OR is recommended instead at low event rates.
 - **Stratified MN RD** (score-based, using `PropCIs::diffscoreci`) shows 0% failure across all scenarios. Type I error is slightly conservative at low event rates (0.035–0.041), which is a known advantage of the Miettinen-Nurminen method in sparse settings.
 - With **stratified block randomization** (block size 4), within-stratum balance is guaranteed even for very small strata.
 
