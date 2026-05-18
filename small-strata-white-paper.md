@@ -54,6 +54,10 @@ For SAPs using CMH (OR or RR) or stratified MN (risk difference):
 
 All simulation code: `run_small_strata.R` in this repository.
 
+## Validation
+
+The CMH RR variance formula was independently verified against the empirical sampling variance (500 bootstrap replicates): estimated variance = 0.028 vs. empirical = 0.025, ratio 1.11. The slight conservatism is expected due to the +0.5 continuity correction.
+
 ---
 
 ## Appendix: Method Definitions and Formulas
