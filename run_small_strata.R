@@ -4,12 +4,9 @@
 library(furrr); library(future)
 plan(multisession, workers = min(11, future::availableCores() - 1))
 
-# ── Stratified Wald risk difference (Wald CI, not score-based MN) ──
-# NOTE: True Miettinen-Nurminen uses iterative score equation solving.
-# This implementation uses inverse-variance weighted Wald CIs,
-# which is more conservative (wider CIs) but computationally robust.
-# For small strata, the IV-weighted Wald may fail where MN would not.
-stratified_wald_rd <- function(strata, A, Y, conf.level = 0.95) {
+# ── Stratified Miettinen-Nurminen risk difference ──
+library(PropCIs)
+stratified_mn_rd <- function(strata, A, Y, conf.level = 0.95) {
   u_strata <- unique(strata)
   ests <- numeric(length(u_strata)); vars <- numeric(length(u_strata))
   valid <- logical(length(u_strata))
@@ -18,24 +15,21 @@ stratified_wald_rd <- function(strata, A, Y, conf.level = 0.95) {
     Ak <- A[idx]; Yk <- Y[idx]
     n1 <- sum(Ak); n0 <- length(Ak) - n1
     x1 <- sum(Yk[Ak == 1]); x0 <- sum(Yk[Ak == 0])
-    if (n1 > 0 && n0 > 0) {
-      p1 <- x1/n1; p0 <- x0/n0
-      rd <- p1 - p0
-      se <- sqrt(p1*(1-p1)/n1 + p0*(1-p0)/n0)
-      if (is.finite(se) && se > 0 && is.finite(rd)) {
-        ests[k] <- rd; vars[k] <- se^2; valid[k] <- TRUE
+    if (n1 > 0 && n0 > 0 && x1 + x0 > 0) {
+      ci <- tryCatch(diffscoreci(x1, n1, x0, n0, conf.level), error = function(e) NULL)
+      if (!is.null(ci)) {
+        rd <- x1/n1 - x0/n0
+        se <- (ci$conf.int[2] - ci$conf.int[1]) / (2*qnorm(1-(1-conf.level)/2))
+        if (is.finite(se) && se > 0) { ests[k] <- rd; vars[k] <- se^2; valid[k] <- TRUE }
       }
     }
   }
-  if (sum(valid) == 0) return(list(est = NA, lower = NA, upper = NA, se = NA, p = NA))
+  if (sum(valid) < 2) return(list(p = NA))
   w <- 1/vars[valid]
-  rd_pooled <- sum(w * ests[valid]) / sum(w)
-  se_pooled <- sqrt(1 / sum(w))
-  if (is.na(se_pooled) || se_pooled == 0) return(list(est = NA, p = NA))
-  z <- qnorm(1 - (1-conf.level)/2)
-  p <- 2*pnorm(-abs(rd_pooled / se_pooled))
-  list(est = rd_pooled, lower = rd_pooled - z*se_pooled,
-       upper = rd_pooled + z*se_pooled, se = se_pooled, p = p)
+  rd_pooled <- sum(w*ests[valid])/sum(w)
+  se_pooled <- sqrt(1/sum(w))
+  if (is.na(se_pooled) || se_pooled == 0) return(list(p = NA))
+  list(p = 2*pnorm(-abs(rd_pooled/se_pooled)))
 }
 
 # ── CMH risk ratio (Mantel-Haenszel with stratified variance) ──
@@ -158,7 +152,7 @@ for (scenario in 1:4) {
       cmh_rr_p <- rr_res$p
       
       # ---- Stratified MN RD ----
-      mn_res <- tryCatch(stratified_wald_rd(stratum, A, Y),
+      mn_res <- tryCatch(stratified_mn_rd(stratum, A, Y),
                           error = function(e) list(est = NA, lower = NA, upper = NA, se = NA, p = NA))
       mn_p <- mn_res$p
       
