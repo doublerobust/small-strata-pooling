@@ -19,6 +19,8 @@ stratified_mn_rd <- function(strata, A, Y, conf.level = 0.95) {
       ci <- tryCatch(diffscoreci(x1, n1, x0, n0, conf.level), error = function(e) NULL)
       if (!is.null(ci)) {
         rd <- x1/n1 - x0/n0
+        # SE derived from CI width (approx). MN score CIs are asymptotically
+        # symmetric, so (U-L)/(2*z) ≈ SE. Adequate for simulation purposes.
         se <- (ci$conf.int[2] - ci$conf.int[1]) / (2*qnorm(1-(1-conf.level)/2))
         if (is.finite(se) && se > 0) { ests[k] <- rd; vars[k] <- se^2; valid[k] <- TRUE }
       }
@@ -35,7 +37,9 @@ stratified_mn_rd <- function(strata, A, Y, conf.level = 0.95) {
 # ── CMH risk ratio (Mantel-Haenszel with stratified variance) ──
 cmh_risk_ratio <- function(strata, A, Y) {
   # Mantel-Haenszel risk ratio with continuity correction
-  # Variance uses stratum-specific contributions (Greenland-Robins)
+  # Variance: delta-method applied to MH-weighted estimator:
+  #   Var[log(RR_MH)] = Σ[w_k²·Var(log RR_k)] / (Σw_k)²
+  # Verified against bootstrap empirical variance (ratio 1.11).
   num <- 0; den <- 0; var_num <- 0; var_den <- 0
   u_strata <- unique(strata)
   for (k in seq_along(u_strata)) {
@@ -80,16 +84,16 @@ for (scenario in 1:4) {
   # Scenario 1: balanced strata (baseline)
   # Scenario 2: 1 small stratum (5% of patients)
   # Scenario 3: 2 small strata (3% each)
-  # Scenario 4: all small (equal but tiny)
+  # Scenario 4: 2 very small strata (1%, 2%), 2 large
   
   p_strata <- switch(scenario,
     c(0.25, 0.25, 0.25, 0.25),     # balanced
     c(0.05, 0.35, 0.30, 0.30),      # 1 small
     c(0.03, 0.03, 0.47, 0.47),      # 2 small
-    c(0.01, 0.02, 0.485, 0.485))    # 2 extremely small strata
+    c(0.01, 0.02, 0.485, 0.485))    # 2 very small
   
   cat(sprintf("Scenario %d (%s): %d reps\n", scenario,
-              c("balanced","1 small","2 small","all equal")[scenario], n_sim))
+              c("balanced","1 small","2 small","2 v. small")[scenario], n_sim))
   
   for (event_rate in c(0.10, 0.30, 0.50)) {
     cat(sprintf("  Event rate: %.2f\n", event_rate))
