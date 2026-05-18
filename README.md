@@ -1,7 +1,7 @@
 # Small Strata Pooling: Internal Investigation
 
 **Author:** Yue Shentu  
-**Status:** Internal white paper — complete  
+**Status:**  white paper — complete  
 **Date:** May 2026  
 **Repository:** github.com/doublerobust/small-strata-pooling
 
@@ -21,7 +21,7 @@
 
 ## Motivation
 
-In stratified randomized trials, SAPs routinely require pre-specified pooling rules for small strata. This creates operational complexity: statisticians review blinded data pre-interim to identify small strata and determine pooling. Internal investigation found this is unnecessary for Cox/log-rank. This investigation extends the same question to binary endpoint methods.
+In stratified randomized trials, SAPs routinely require pre-specified pooling rules for small strata. This creates operational complexity: statisticians review blinded data pre-interim to identify small strata and determine pooling. Previous investigation found this is unnecessary for Cox/log-rank. This investigation extends the same question to binary endpoint methods.
 
 ## Methods Investigated
 
@@ -37,7 +37,7 @@ In stratified randomized trials, SAPs routinely require pre-specified pooling ru
 - Event rates: 10%, 30%, 50%
 - Sparsity: from balanced to extreme (1% stratum size)
 
-## Key Finding
+## Secondary Finding
 
 Type I error departures from nominal are **inherent to the methods**, not caused by small strata. Pooling would not address them.
 
