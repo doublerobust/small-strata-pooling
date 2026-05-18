@@ -4,60 +4,45 @@
 library(furrr); library(future)
 plan(multisession, workers = min(11, future::availableCores() - 1))
 
-# ── Helper: stratified MN risk difference (score-based CI) ──
-miettinen_nurminen_rd <- function(n1, x1, n0, x0, conf.level = 0.95) {
-  # Miettinen-Nurminen score CI for risk difference (stratified version)
-  # n1, x1 = treated arm total and events; n0, x0 = control arm total and events
-  # For stratified: combine via score statistic
-  p1 <- x1/n1; p0 <- x0/n0
-  rd <- p1 - p0
-  # Score statistic for H0: RD = delta
-  # Simple Wald CI as approximation (standard practice)
-  se <- sqrt(p1*(1-p1)/n1 + p0*(1-p0)/n0)
-  z <- qnorm(1 - (1-conf.level)/2)
-  lower <- rd - z*se; upper <- rd + z*se
-  list(est = rd, lower = lower, upper = upper, se = se)
-}
-
-stratified_mn_rd <- function(strata, A, Y, conf.level = 0.95) {
-  # Stratified MN by pooling stratum-specific score statistics
-  n_strata <- length(unique(strata))
-  
-  # Pooled estimate: inverse-variance weighted
-  ests <- numeric(n_strata); vars <- numeric(n_strata)
-  valid <- logical(n_strata)
-  
-  for (k in seq_len(n_strata)) {
-    idx <- which(strata == k)
+# ── Stratified Wald risk difference (Wald CI, not score-based MN) ──
+# NOTE: True Miettinen-Nurminen uses iterative score equation solving.
+# This implementation uses inverse-variance weighted Wald CIs,
+# which is more conservative (wider CIs) but computationally robust.
+# For small strata, the IV-weighted Wald may fail where MN would not.
+stratified_wald_rd <- function(strata, A, Y, conf.level = 0.95) {
+  u_strata <- unique(strata)
+  ests <- numeric(length(u_strata)); vars <- numeric(length(u_strata))
+  valid <- logical(length(u_strata))
+  for (k in seq_along(u_strata)) {
+    idx <- which(strata == u_strata[k])
     Ak <- A[idx]; Yk <- Y[idx]
     n1 <- sum(Ak); n0 <- length(Ak) - n1
     x1 <- sum(Yk[Ak == 1]); x0 <- sum(Yk[Ak == 0])
-    
     if (n1 > 0 && n0 > 0) {
-      res <- miettinen_nurminen_rd(n1, x1, n0, x0, conf.level)
-      ests[k] <- res$est
-      vars[k] <- res$se^2
-      valid[k] <- TRUE
+      p1 <- x1/n1; p0 <- x0/n0
+      rd <- p1 - p0
+      se <- sqrt(p1*(1-p1)/n1 + p0*(1-p0)/n0)
+      if (is.finite(se) && se > 0 && is.finite(rd)) {
+        ests[k] <- rd; vars[k] <- se^2; valid[k] <- TRUE
+      }
     }
   }
-  
   if (sum(valid) == 0) return(list(est = NA, lower = NA, upper = NA, se = NA, p = NA))
-  
-  # Inverse-variance weighted pooled estimate
   w <- 1/vars[valid]
   rd_pooled <- sum(w * ests[valid]) / sum(w)
   se_pooled <- sqrt(1 / sum(w))
+  if (is.na(se_pooled) || se_pooled == 0) return(list(est = NA, p = NA))
   z <- qnorm(1 - (1-conf.level)/2)
   p <- 2*pnorm(-abs(rd_pooled / se_pooled))
-  
   list(est = rd_pooled, lower = rd_pooled - z*se_pooled,
        upper = rd_pooled + z*se_pooled, se = se_pooled, p = p)
 }
 
-# ── CMH risk ratio (Mantel-Haenszel) ──
+# ── CMH risk ratio (Mantel-Haenszel with stratified variance) ──
 cmh_risk_ratio <- function(strata, A, Y) {
   # Mantel-Haenszel risk ratio with continuity correction
-  num <- 0; den <- 0
+  # Variance uses stratum-specific contributions (Greenland-Robins)
+  num <- 0; den <- 0; var_num <- 0; var_den <- 0
   u_strata <- unique(strata)
   for (k in seq_along(u_strata)) {
     idx <- which(strata == u_strata[k])
@@ -67,17 +52,22 @@ cmh_risk_ratio <- function(strata, A, Y) {
     if (n1 > 0 && n0 > 0) {
       w <- n0 * n1 / (n0 + n1)
       r1 <- (x1 + 0.5) / (n1 + 0.5); r0 <- (x0 + 0.5) / (n0 + 0.5)
-      num <- num + w * (r1 / r0); den <- den + w
+      rr_k <- r1 / r0
+      num <- num + w * rr_k; den <- den + w
+      # Greenland-Robins variance contribution
+      if (x1 + x0 > 0) {
+        var_num <- var_num + w^2 * (1/(x1+0.5) - 1/(n1+0.5) + 1/(x0+0.5) - 1/(n0+0.5))
+      }
     }
   }
   if (den == 0) return(list(est = NA, p = NA))
-  rr_pooled <- num / den; log_rr <- log(rr_pooled)
-  tot_x1 <- sum(Y[A==1]); tot_x0 <- sum(Y[A==0])
-  tot_n1 <- sum(A); tot_n0 <- sum(1-A)
-  if (tot_x1 == 0 || tot_x0 == 0) return(list(est = NA, p = NA))
-  se_log <- sqrt(1/tot_x1 - 1/tot_n1 + 1/tot_x0 - 1/tot_n0)
+  rr_pooled <- num / den
+  # SE of log(RR) using delta method
+  var_log <- var_num / (den^2)
+  if (is.na(var_log) || var_log <= 0) return(list(est = NA, p = NA))
+  se_log <- sqrt(var_log)
   if (is.na(se_log) || se_log == 0) return(list(est = NA, p = NA))
-  list(est = rr_pooled, p = 2*pnorm(-abs(log_rr / se_log)))
+  list(est = rr_pooled, p = 2*pnorm(-abs(log(rr_pooled) / se_log)))
 }
 
 # ── Scenario grid ──
@@ -100,7 +90,7 @@ for (scenario in 1:4) {
     c(0.25, 0.25, 0.25, 0.25),     # balanced
     c(0.05, 0.35, 0.30, 0.30),      # 1 small
     c(0.03, 0.03, 0.47, 0.47),      # 2 small
-    c(0.25, 0.25, 0.25, 0.25))      # all equal (small N)
+    c(0.01, 0.02, 0.485, 0.485))    # 2 extremely small strata
   
   cat(sprintf("Scenario %d (%s): %d reps\n", scenario,
               c("balanced","1 small","2 small","all equal")[scenario], n_sim))
@@ -168,7 +158,7 @@ for (scenario in 1:4) {
       cmh_rr_p <- rr_res$p
       
       # ---- Stratified MN RD ----
-      mn_res <- tryCatch(stratified_mn_rd(stratum, A, Y),
+      mn_res <- tryCatch(stratified_wald_rd(stratum, A, Y),
                           error = function(e) list(est = NA, lower = NA, upper = NA, se = NA, p = NA))
       mn_p <- mn_res$p
       
