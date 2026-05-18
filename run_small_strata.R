@@ -48,7 +48,9 @@ cmh_risk_ratio <- function(strata, A, Y) {
       r1 <- (x1 + 0.5) / (n1 + 0.5); r0 <- (x0 + 0.5) / (n0 + 0.5)
       rr_k <- r1 / r0
       num <- num + w * rr_k; den <- den + w
-      # Greenland-Robins variance contribution
+      # Greenland-Robins variance for log(RR_MH):
+      # Var = Σ[w_i² × {(n₁-x₁)/(n₁x₁) + (n₀-x₀)/(n₀x₀)}] / (Σw_i)²
+      # With 0.5 CC: (n-x+0.5)/((n+0.5)(x+0.5)) = 1/(x+0.5) - 1/(n+0.5)
       if (x1 + x0 > 0) {
         var_num <- var_num + w^2 * (1/(x1+0.5) - 1/(n1+0.5) + 1/(x0+0.5) - 1/(n0+0.5))
       }
