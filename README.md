@@ -1,70 +1,38 @@
-# Small Strata Pooling: Internal Investigation
+# Small Strata Pooling Investigation
 
 **Author:** Yue Shentu  
-**Status:**  white paper — complete  
-**Date:** May 2026  
 **Repository:** github.com/doublerobust/small-strata-pooling
 
----
+Comprehensive investigation of whether pooling small strata is necessary for stratified analyses in Merck oncology SAPs.
 
-## Bottom Line
+## Key Findings
 
-**No pooling of small strata is required** for any of the standard methods used in Merck oncology SAPs:
+| Method | Pooling Needed? |
+|--------|:--------------:|
+| CMH OR, CMH RR, MN RD (binary) | ❌ No |
+| Stratified Cox PH (time-to-event) | ❌ No |
+| Stratified Log-rank (time-to-event) | ⚠️ Pool strata < 10 patients |
 
-| Method | Failure Rate | Type I Error | Pooling Needed? |
-|--------|:-----------:|:-----------:|:---------------:|
-| CMH Odds Ratio (+0.5 CC) | 0.000 | 0.043–0.054 | ❌ No |
-| CMH Risk Ratio (Greenland-Robins) | 0.000 | 0.045–0.081 | ❌ No |
-| Stratified Miettinen-Nurminen Risk Diff | 0.000 | 0.035–0.069 | ❌ No |
-| Cox PH (stratified) | — | — | ❌ No (confirmed) |
-| Log-rank (stratified) | — | — | ❌ No (confirmed) |
-
-## Motivation
-
-In stratified randomized trials, SAPs routinely require pre-specified pooling rules for small strata. This creates operational complexity: statisticians review blinded data pre-interim to identify small strata and determine pooling. Previous investigation found this is unnecessary for Cox/log-rank. This investigation extends the same question to binary endpoint methods.
-
-## Methods Investigated
-
-- **CMH Odds Ratio** — Mantel-Haenszel estimator with +0.5 continuity correction
-- **CMH Risk Ratio** — MH-weighted with Greenland-Robins stratified variance
-- **Stratified Miettinen-Nurminen Risk Difference** — Score-based CIs via `PropCIs::diffscoreci`, inverse-variance pooled
-
-## Simulation Design
-
-- 5,000 reps per scenario
-- Stratified block randomization (block size 4)
-- N = 400, 2–4 stratification factors
-- Event rates: 10%, 30%, 50%
-- Sparsity: from balanced to extreme (1% stratum size)
-
-## Secondary Finding
-
-Type I error departures from nominal are **inherent to the methods**, not caused by small strata. Pooling would not address them.
-
-## Repository Contents
+## Documents
 
 | File | Description |
-|------|-------------|
-| `small-strata-white-paper.md` | Final white paper with SAP language |
-| `small-strata-proposal.md` | Original research proposal |
-| `run_small_strata.R` | R simulation code |
-| `code-review.md` | Independent code review v1 |
-| `code-review-v2.md` | Independent code review v2 |
-| `final-review.md` | Final white paper + code review |
+|:-----|:------------|
+| `small-strata-white-paper.md` | Comprehensive white paper with all findings and recommendations |
+| `elstic-guidance-update.md` | Proposed ELSTIC guidance update |
+| `logrank-pooling-explanation.md` | Technical explanation of why log-rank is affected |
+| `binary/` | Binary endpoint simulations + audit trail |
+| `survival/` | Time-to-event simulations + audit trail |
+| `README.md` | This file |
 
 ## Reproducing Results
 
-Run in R with the `PropCIs` package installed:
-
+### Binary
 ```r
-install.packages("PropCIs")
-source("run_small_strata.R")
+source("binary/run_small_strata.R")      # Type I error (~2 min)
+source("binary/run_power_analysis.R")     # Power analysis (~3 min)
 ```
 
-The simulation takes ~2-3 minutes with 11 parallel workers.
-
-## Proposed SAP Language
-
-For SAPs using CMH (OR or RR) or stratified MN (risk difference):
-
-> *"Stratification factors will be used as specified in the randomization scheme. No pooling of small strata is required."*
+### Survival
+```r
+source("survival/run_survival_full.R")    # Full 10K+5K reps (~15 min with 11 workers)
+```
