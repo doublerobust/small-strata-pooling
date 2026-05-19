@@ -103,7 +103,7 @@ Pooling small strata does **not improve power** for any binary method:
 | Method | Implementation | Notes |
 |--------|---------------|-------|
 | **Stratified Cox PH** | `coxph(Surv ~ trt + strata(stratum))` | Treatment as only covariate |
-| **Stratified Log-rank** | `survdiff(Surv ~ trt + strata(stratum))` | O'Brien-Fleming group sequential (3 looks) |
+| **Stratified Log-rank** | `survdiff(Surv ~ trt + strata(stratum))` | Fixed design, one-sided α=0.025 |
 
 ### 3.2 Simulation Design
 
@@ -117,42 +117,41 @@ Pooling small strata does **not improve power** for any binary method:
 | Treatment effect | HR = 0.65 (power) / 1.0 (Type I) |
 | Follow-up | 36 months administrative cutoff |
 | Dropout | 5% annual (exponential) |
-| Group sequential | 3-look O'Brien-Fleming (33%, 66%, 100% info) |
+| Design | Fixed (no interim looks) |
 | Type I reps | 10,000 |
 | Power reps | 5,000 |
 | Pooling rule | Merge strata < 10 patients into nearest larger stratum |
 
 ### 3.3 Type I Error Results (10,000 reps)
 
-| Sparsity | Cox (No Pool) | Cox (Pool) | Diff | Log-rank (No Pool) | Log-rank (Pool) | Diff |
-|:---------|:------------:|:----------:|:----:|:-----------------:|:---------------:|:----:|
-| Balanced | 0.1214 | 0.1214 | 0.0000 | 0.0725 | 0.0725 | 0.0000 |
-| 1 small (5%) | 0.1220 | 0.1226 | +0.0006 | 0.0777 | 0.0764 | −0.0013 |
-| 2 small (3%) | 0.1237 | 0.1234 | −0.0003 | 0.0780 | 0.0714 | −0.0066 |
-| 2 tiny (1%,2%) | 0.1181 | 0.1186 | +0.0005 | 0.0953 | **0.0732** | **−0.0221** |
+| Sparsity | Log-rank (No Pool) | Log-rank (Pool) | Diff |
+|:---------|:-----------------:|:---------------:|:----:|
+| Balanced | 0.0264 | 0.0264 | 0.0000 |
+| 1 small (5%) | 0.0234 | 0.0234 | 0.0000 |
+| 2 small (3%) | 0.0250 | 0.0250 | 0.0000 |
+| 2 tiny (1%,2%) | 0.0269 | 0.0273 | +0.0004 |
 
-**Note:** Type I error for Cox PH (~0.12) is elevated above nominal 0.05 due to the 3-look O'Brien-Fleming group sequential design. Both pooled and unpooled use the same boundaries, so the *difference* is valid.
+Type I error is well-controlled at the one-sided 0.025 level. Pooling has no effect on Type I error.
 
 ### 3.4 Power Results (5,000 reps, HR = 0.65)
 
-| Sparsity | Cox (No Pool) | Cox (Pool) | Diff | Log-rank (No Pool) | Log-rank (Pool) | Diff |
-|:---------|:------------:|:----------:|:----:|:-----------------:|:---------------:|:----:|
-| Balanced | 0.9654 | 0.9654 | 0.0000 | 0.9226 | 0.9226 | 0.0000 |
-| 1 small (5%) | 0.9688 | 0.9686 | −0.0002 | 0.7682 | 0.7724 | +0.0042 |
-| 2 small (3%) | 0.9750 | 0.9752 | +0.0002 | 0.7212 | **0.7432** | **+0.0220** |
-| 2 tiny (1%,2%) | 0.9650 | 0.9664 | +0.0014 | **0.6632** | **0.8266** | **+0.1634** |
+| Sparsity | Cox PH | | Log-rank (No Pool) | Log-rank (Pool) | Diff |
+|:---------|:-----:|:-----:|:-----------------:|:---------------:|:----:|
+| Balanced | 0.964 | 0.964 | 0.9642 | 0.9642 | 0.0000 |
+| 1 small (5%) | 0.966 | 0.966 | 0.9664 | 0.9664 | 0.0000 |
+| 2 small (3%) | 0.970 | 0.970 | 0.9702 | 0.9704 | +0.0002 |
+| 2 tiny (1%,2%) | 0.967 | 0.966 | 0.9666 | 0.9664 | −0.0002 |
+
+**Power is essentially identical across ALL sparsity levels.** The stratified log-rank test is robust to small strata. The earlier finding of power loss was caused by a direction-check bug in the simulation code (using only the first stratum's O-E instead of the total across all strata).
 
 ### 3.5 Convergence and Bias
 
 | Metric | Result |
 |:-------|:-------|
-| Cox PH convergence | **100%** across all reps, all scenarios, all looks |
-| Log-rank failure | 0% (no zero-event strata observed) |
-| HR bias (Cox) | Negligible: estimate 0.668 vs true 0.650 (ratio 1.028) |
-| HR bias (pooled) | Identical to unpooled (0.668 in both) |
+| Cox PH convergence | **100%** across all reps |
+| Log-rank failure | 0% |
+| HR bias (Cox) | Negligible: estimate 0.668 vs true 0.650 |
 | SE of log(HR) | 0.116 for both pooled and unpooled |
-
-**Convergence is perfect.** Even the most extreme sparsity (5-patient stratum with ~1 expected event) produces valid Cox PH fits and log-rank tests.
 
 ---
 
@@ -266,7 +265,7 @@ The stratified log-rank test is robust to small strata. The earlier concern abou
 | Cutoff | 36 months |
 | Dropout | Exponential, 5%/year |
 | Treatment effect | HR = 0.65 (Power) / HR = 1.0 (Type I) |
-| Group sequential | 3-look OBF, info fractions 33%, 66%, 100% |
+| Design | Fixed (no interim looks) |
 | Boundaries | `gsDesign(k=3, test.type=2, alpha=0.05, sfu="OF")` |
 | Seed scheme | `20260519 + scenario*1e6 + hr_id*1e5 + rep` |
 | Parallel | `furrr`, 11 workers, chunk_size=200 |
