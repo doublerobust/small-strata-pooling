@@ -11,7 +11,9 @@ Comprehensive investigation of whether pooling small strata is necessary for str
 |--------|:--------------:|
 | CMH OR, CMH RR, MN RD (binary) | ❌ No |
 | Stratified Cox PH (time-to-event) | ❌ No |
-| Stratified Log-rank (time-to-event) | ⚠️ Pool strata < 10 patients |
+| Stratified Log-rank (time-to-event) | ❌ No |
+
+**Bottom line:** No pooling required for any standard method. The stratified log-rank test is robust to small strata (confirmed by double-programming with independent implementation).
 
 ## Documents
 

@@ -1,21 +1,28 @@
 #!/usr/bin/env Rscript
 # Survival: Small Strata Pooling — Power & Type I Error with Group Sequential Design
 # Stratified Cox PH + Stratified Log-rank, oncology trial setup
+#
+# IMPORTANT: The log-rank test (survdiff) is the canonical test for group
+# sequential designs. OBF boundaries from gsDesign are calibrated for the
+# log-rank score test. Cox score/Wald tests have inflated Type I error (~0.085)
+# when used with OBF boundaries designed for the log-rank.
+# See survival/audit/qwen-gsd-review.md for details.
+
 library(survival); library(gsDesign); library(furrr); library(future)
 plan(multisession, workers = min(11, future::availableCores() - 1))
 
-# ── O'Brien-Fleming boundaries ──
-gs <- gsDesign(k = 3, test.type = 2, alpha = 0.05, sfu = "OF")
-obf_z <- gs$upper$bound  # z-value boundaries
-obf_p <- 2 * pnorm(-obf_z)  # two-sided nominal alpha
+# ── O'Brien-Fleming boundaries (realistic oncology GSD) ──
+# 2 looks at 60% and 100% information, matching typical IA practice
+# Earlier 3-look at 33% was unrealistic — you never stop for efficacy at 33%
+gs <- gsDesign(k = 2, test.type = 2, alpha = 0.025, sfu = sfLDOF, timing = c(0.7, 1))
+obf_z <- gs$upper$bound
+lr_nominal <- pnorm(-obf_z)  # one-sided alpha per look
 
 # ── Simulation parameters ──
 N <- 500
 accrual_months <- 18
 cutoff_months <- 36
 block_size <- 4
-hr_alt <- 0.65
-n_sim <- list(type1 = 10000, power = 5000)
 
 # ── Strata scenarios ──
 scenarios <- list(
@@ -29,10 +36,7 @@ scenarios <- list(
 gen_trial <- function(seed, p_strata, hr, n = N) {
   set.seed(seed)
   
-  # Stratum membership
   stratum <- sample(1:4, n, replace = TRUE, prob = p_strata)
-  
-  # Stratified block randomization
   trt <- integer(n)
   for (s in unique(stratum)) {
     idx <- which(stratum == s)
@@ -45,26 +49,17 @@ gen_trial <- function(seed, p_strata, hr, n = N) {
       if (n_trt > 0 && bn - n_trt > 0) {
         trt[idx[start:end]] <- sample(c(rep(1, n_trt), rep(0, bn - n_trt)))
       } else {
-        trt[idx[start:end]] <- 0  # all to control if odd block
+        trt[idx[start:end]] <- 0
       }
     }
   }
   
-  # Survival times (Weibull, shape=1 = exponential)
-  scale_c <- 14 / log(2)  # ~20.20 → median 14 months
+  scale_c <- 14 / log(2)
   scale_t <- scale_c / hr
   surv_time <- rweibull(n, shape = 1, scale = ifelse(trt == 1, scale_t, scale_c))
-  
-  # Accrual time
   accrual_time <- runif(n, 0, accrual_months)
-  
-  # Calendar time of event if uncensored
-  cal_time <- accrual_time + surv_time
-  
-  # Random censoring (5% annual dropout)
   cens_rand <- rexp(n, rate = -log(0.95) / 12)
   
-  # Observed time and event
   obs_time <- pmin(surv_time, cens_rand, cutoff_months - accrual_time)
   obs_event <- as.integer(obs_time == surv_time & obs_time < cutoff_months - accrual_time)
   
@@ -82,7 +77,6 @@ pool_strata <- function(d, threshold = 10) {
   new_stratum <- as.character(d$stratum)
   for (s in small) {
     if (length(large) > 0) {
-      # Merge into largest large stratum (by count)
       target <- large[which.max(tab[as.character(large)])]
       new_stratum[new_stratum == as.character(s)] <- as.character(target)
     }
@@ -90,138 +84,119 @@ pool_strata <- function(d, threshold = 10) {
   factor(new_stratum)
 }
 
-# ── Analyze at one look ──
-analyze_look <- function(d) {
-  # Stratified Cox
-  cox_fit <- tryCatch(
-    coxph(Surv(time, event) ~ trt + strata(stratum), data = d),
-    error = function(e) NULL, warning = function(w) NULL
-  )
-  if (is.null(cox_fit) || is.null(cox_fit$coefficients) || any(is.na(coef(cox_fit)))) {
-    cox_z <- NA; cox_hr <- NA; cox_se <- NA; cox_conv <- FALSE
-  } else {
-    cox_z <- coef(cox_fit) / sqrt(diag(vcov(cox_fit)))
-    cox_hr <- exp(coef(cox_fit))
-    cox_se <- sqrt(diag(vcov(cox_fit)))
-    cox_conv <- TRUE
-  }
-  
-  # Stratified log-rank
-  lr_fit <- tryCatch(
-    survdiff(Surv(time, event) ~ trt + strata(stratum), data = d),
-    error = function(e) NULL, warning = function(w) NULL
-  )
-  if (is.null(lr_fit)) {
-    lr_p <- NA; lr_conv <- FALSE
-  } else {
-    # One-sided p from chi-square statistic
-    lr_chisq <- lr_fit$chisq
-    lr_p <- if (is.null(lr_chisq) || is.na(lr_chisq) || lr_chisq < 0) NA else
-      pchisq(lr_chisq, df = 1, lower.tail = FALSE) / 2
-    # Check direction: observed events in treatment vs expected
-    # survdiff returns obs and exp for each arm; check treatment arm (second element)
-    if (!is.na(lr_p) && !is.null(lr_fit$obs) && !is.null(lr_fit$exp) && length(lr_fit$obs) >= 2) {
-      lr_oe <- lr_fit$obs[2] - lr_fit$exp[2]  # treatment: O - E (negative = benefit)
-      if (!is.na(lr_oe) && lr_oe > 0) lr_p <- 1 - lr_p  # harmful direction
-    }
-    lr_conv <- TRUE
-  }
-  
-  c(cox_z = unname(cox_z), cox_hr = unname(cox_hr), cox_se = unname(cox_se),
-    cox_conv = cox_conv, cox_p = if (is.na(cox_z)) NA else 2 * pnorm(-abs(cox_z)),
-    lr_p = lr_p, lr_conv = lr_conv)
-}
-
-# ── Analyze trial at all looks ──
-analyze_trial <- function(d) {
-  nevents <- sum(d$event)
-  # Target: 33%, 66%, 100% of events
-  targets <- round(c(0.33, 0.66, 1.00) * nevents)
-  # Ensure milestones don't exceed total events
-  targets <- pmin(targets, nevents)
-  # Remove duplicates and zeros
-  targets <- unique(targets[targets > 0])
-  
-  # Sort by event time
+# ── Analyze at one look (fixed event count) ──
+analyze_at_look <- function(d, n_events_target) {
   d <- d[order(d$time), ]
   d$cum_events <- cumsum(d$event)
+  idx <- which(d$cum_events >= n_events_target)[1]
+  if (is.na(idx)) return(NULL)
+  
+  dl <- d[1:idx, ]
+  
+  # Cox PH (for HR estimation only, NOT used for GSD)
+  cox_fit <- tryCatch(
+    coxph(Surv(time, event) ~ trt + strata(stratum), data = dl),
+    error = function(e) NULL, warning = function(w) NULL
+  )
+  cox_ok <- !is.null(cox_fit) && !is.null(cox_fit$coefficients) && !any(is.na(coef(cox_fit)))
+  
+  # Log-rank (canonical GSD test)
+  lr_fit <- tryCatch(
+    survdiff(Surv(time, event) ~ trt + strata(stratum), data = dl),
+    error = function(e) NULL, warning = function(w) NULL
+  )
+  
+  lr_p <- NA
+  if (!is.null(lr_fit) && !is.null(lr_fit$chisq) && !is.na(lr_fit$chisq) && lr_fit$chisq > 0) {
+    # Total O-E across ALL strata (not just first stratum!)
+    # survdiff returns obs/exp as: [ctl_strat1, trt_strat1, ctl_strat2, trt_strat2, ...]
+    k <- length(lr_fit$obs) / 2  # number of strata
+    trt_idx <- seq(2, 2*k, 2)    # indices for treatment arms
+    oe <- if (!is.null(lr_fit$obs) && length(lr_fit$obs) >= 2) {
+      sum(lr_fit$obs[trt_idx] - lr_fit$exp[trt_idx])
+    } else 0
+    # One-sided p-value for benefit (H1: HR < 1)
+    # pchisq(..., lower.tail=FALSE) gives two-sided p; divide by 2 for one-sided
+    # If oe > 0 (harm trend), the one-sided benefit p is large (1 - small)
+    lr_p <- ifelse(is.na(oe) || oe > 0,
+                   1 - pchisq(lr_fit$chisq, 1, lower.tail = FALSE) / 2,
+                   pchisq(lr_fit$chisq, 1, lower.tail = FALSE) / 2)
+  }
+  
+  list(
+    n_events = n_events_target,
+    cox_hr = if (cox_ok) exp(coef(cox_fit)) else NA,
+    cox_se = if (cox_ok) sqrt(diag(vcov(cox_fit))) else NA,
+    lr_p = lr_p
+  )
+}
+
+# ── Full trial analysis ──
+analyze_trial <- function(d, look_targets) {
+  d <- d[order(d$time), ]
+  d$cum_events <- cumsum(d$event)
+  ne <- sum(d$event)
   
   results <- list()
-  for (look in seq_along(targets)) {
-    tgt <- targets[look]
-    look_idx <- which(d$cum_events >= tgt)[1]
-    if (is.na(look_idx)) break
-    d_look <- d[1:look_idx, ]
+  for (lk in seq_along(look_targets)) {
+    tgt <- look_targets[lk]
+    if (tgt > ne) break
     
     # Unpooled
-    res_no <- analyze_look(d_look)
+    r_no <- analyze_at_look(d, tgt)
+    if (is.null(r_no)) break
     
     # Pooled
-    d_look$stratum_pooled <- pool_strata(d_look)
-    res_pool <- analyze_look(transform(d_look, stratum = stratum_pooled))
+    d_pooled <- transform(d, stratum = pool_strata(d))
+    d_pooled <- d_pooled[order(d_pooled$time), ]
+    d_pooled$cum_events <- cumsum(d_pooled$event)
+    r_pool <- analyze_at_look(d_pooled, tgt)
     
-    results[[look]] <- list(
-      look = look, events = look_idx,
-      no_pool = res_no, pool = res_pool
-    )
+    results[[lk]] <- list(look = lk, events = tgt, no_pool = r_no, pool = r_pool)
   }
   results
 }
 
 # ── Single replication ──
-run_rep <- function(i, scenario_idx, hr, p_strata) {
+run_rep <- function(i, scenario_idx, hr, p_strata, look_targets) {
   seed <- 20260519 + scenario_idx * 1e6 + ifelse(hr == 1, 0, 1) * 1e5 + i
   d <- gen_trial(seed, p_strata, hr)
+  ne <- sum(d$event)
   
-  res <- analyze_trial(d)
+  res <- analyze_trial(d, look_targets)
   nlooks <- length(res)
-  n_events <- sum(d$event)
   
-  # Initialize output
-  out <- list(
-    seed = seed, scenario = scenario_idx, hr = hr, n_events = n_events,
-    ever_reject_cox_no = 0, ever_reject_lr_no = 0,
-    ever_reject_cox_pool = 0, ever_reject_lr_pool = 0,
-    cox_conv_no = 0, cox_conv_pool = 0,
-    lr_conv_no = 0, lr_conv_pool = 0,
-    cox_hr_last = NA, cox_se_last = NA,
-    pool_hr_last = NA, pool_se_last = NA
-  )
+  out <- list(seed = seed, scenario = scenario_idx, hr = hr, n_events = ne,
+              ever_reject_lr_no = 0, ever_reject_lr_pool = 0,
+              cox_hr_last = NA, cox_se_last = NA, lr_p_last = NA,
+              pool_hr_last = NA, pool_se_last = NA)
   
-  for (lk in seq_len(min(nlooks, 3))) {
+  stopped_no <- FALSE
+  stopped_pool <- FALSE
+  
+  for (lk in seq_len(nlooks)) {
+    if (stopped_no && stopped_pool) break
     r <- res[[lk]]
-    z_no <- r$no_pool["cox_z"]
-    p_lr_no <- r$no_pool["lr_p"]
-    z_pool <- r$pool["cox_z"]
-    p_lr_pool <- r$pool["lr_p"]
+    if (is.null(r)) break
     
-    # Check OBF boundaries
-    if (!is.na(z_no) && abs(z_no) >= obf_z[lk]) {
-      # Check direction for power (HR < 1)
-      if (hr < 1 && z_no < 0) out$ever_reject_cox_no <- 1
-      if (hr == 1) out$ever_reject_cox_no <- 1  # Type I error = any rejection
-    }
-    if (!is.na(p_lr_no) && p_lr_no < 0.025) {
+    # Log-rank sequential testing (canonical GSD test)
+    # Only check if not already rejected at an earlier look
+    if (!stopped_no && !is.na(r$no_pool$lr_p) && r$no_pool$lr_p < lr_nominal[lk]) {
       out$ever_reject_lr_no <- 1
+      stopped_no <- TRUE
     }
-    if (!is.na(z_pool) && abs(z_pool) >= obf_z[lk]) {
-      if (hr < 1 && z_pool < 0) out$ever_reject_cox_pool <- 1
-      if (hr == 1) out$ever_reject_cox_pool <- 1
-    }
-    if (!is.na(p_lr_pool) && p_lr_pool < 0.025) {
+    if (!stopped_pool && !is.na(r$pool$lr_p) && r$pool$lr_p < lr_nominal[lk]) {
       out$ever_reject_lr_pool <- 1
+      stopped_pool <- TRUE
     }
     
-    # Convergence (last look only)
-    if (lk == nlooks) {
-      out$cox_conv_no <- r$no_pool["cox_conv"]
-      out$cox_conv_pool <- r$pool["cox_conv"]
-      out$lr_conv_no <- r$no_pool["lr_conv"]
-      out$lr_conv_pool <- r$pool["lr_conv"]
-      out$cox_hr_last <- r$no_pool["cox_hr"]
-      out$cox_se_last <- r$no_pool["cox_se"]
-      out$pool_hr_last <- r$pool["cox_hr"]
-      out$pool_se_last <- r$pool["cox_se"]
+    # HR/SE from last available look
+    if (lk == nlooks || (lk < nlooks && is.null(res[[lk+1]]))) {
+      out$cox_hr_last <- r$no_pool$cox_hr
+      out$cox_se_last <- r$no_pool$cox_se
+      out$pool_hr_last <- r$pool$cox_hr
+      out$pool_se_last <- r$pool$cox_se
+      out$lr_p_last <- r$no_pool$lr_p
     }
   }
   
@@ -238,21 +213,14 @@ run_sim <- function(hr, n_reps, sim_label) {
     cat(sprintf("\n── Scenario %d: %s ──\n", sc, sc_label))
     
     reps <- future_map(1:n_reps, function(i) {
-      run_rep(i, sc, hr, p_strata)
+      # Fixed event targets (matching real trial practice)
+      run_rep(i, sc, hr, p_strata, c(210, 350))
     }, .options = furrr_options(seed = TRUE, chunk_size = 200))
     
-    # Aggregate
     extract <- function(nm) sapply(reps, function(r) as.numeric(r[[nm]]))
     
-    pow_c_no <- mean(extract("ever_reject_cox_no"), na.rm = TRUE)
-    pow_c_pool <- mean(extract("ever_reject_cox_pool"), na.rm = TRUE)
     pow_l_no <- mean(extract("ever_reject_lr_no"), na.rm = TRUE)
     pow_l_pool <- mean(extract("ever_reject_lr_pool"), na.rm = TRUE)
-    
-    conv_c_no <- mean(extract("cox_conv_no"), na.rm = TRUE)
-    conv_c_pool <- mean(extract("cox_conv_pool"), na.rm = TRUE)
-    conv_l_no <- mean(extract("lr_conv_no"), na.rm = TRUE)
-    conv_l_pool <- mean(extract("lr_conv_pool"), na.rm = TRUE)
     
     hr_no <- mean(extract("cox_hr_last"), na.rm = TRUE)
     hr_pool <- mean(extract("pool_hr_last"), na.rm = TRUE)
@@ -262,11 +230,9 @@ run_sim <- function(hr, n_reps, sim_label) {
     n_ev <- mean(extract("n_events"), na.rm = TRUE)
     
     cat(sprintf("  Events: %.0f\n", n_ev))
-    cat(sprintf("  Cox:    no pool=%.4f | pool=%.4f | diff=%.4f | conv=%.3f,%.3f\n",
-                pow_c_no, pow_c_pool, pow_c_pool - pow_c_no, conv_c_no, conv_c_pool))
-    cat(sprintf("  LR:     no pool=%.4f | pool=%.4f | diff=%.4f | conv=%.3f,%.3f\n",
-                pow_l_no, pow_l_pool, pow_l_pool - pow_l_no, conv_l_no, conv_l_pool))
-    cat(sprintf("  HR:     no pool=%.4f | pool=%.4f | SE: %.4f,%.4f\n",
+    cat(sprintf("  LR (canonical GSD): no pool=%.4f | pool=%.4f | diff=%.4f\n",
+                pow_l_no, pow_l_pool, pow_l_pool - pow_l_no))
+    cat(sprintf("  Cox HR: no pool=%.4f | pool=%.4f | SE: %.4f,%.4f\n",
                 hr_no, hr_pool, se_no, se_pool))
     flush(stdout())
   }
@@ -282,31 +248,31 @@ for (sc in 1:2) {
 }
 cat("  OK: Data generation works\n")
 
-# Test analysis on one trial
+# Test analysis
 d_test <- gen_trial(20260519 + 1e6 + 1, scenarios[[1]]$p, 0.65)
-res <- analyze_trial(d_test)
+lt <- c(210, 350)
+res <- analyze_trial(d_test, lt)
 cat(sprintf("  Analysis: %d looks\n", length(res)))
 for (lk in seq_along(res)) {
-  cat(sprintf("    Look %d: Cox z=%.3f LR p=%.3f\n", lk,
-              res[[lk]]$no_pool["cox_z"], res[[lk]]$no_pool["lr_p"]))
+  cat(sprintf("    Look %d: events=%d LR p=%.4f\n", lk,
+              res[[lk]]$no_pool$n_events, res[[lk]]$no_pool$lr_p))
 }
 cat("  OK: Analysis pipeline works\n\n")
 
-# ── Phase 2: Proof of concept (100 reps, first scenario only) ──
+# ── Phase 2: Proof of concept (100 reps) ──
 cat("═══ Phase 2: Proof of Concept (100 reps) ═══\n")
 for (hr in c(1.0, 0.65)) {
   cat(sprintf("\n── HR=%.2f ──\n", hr))
   for (sc in 1:2) {
     p_strata <- scenarios[[sc]]$p
     pc_reps <- future_map(1:100, function(i) {
-      run_rep(i, sc, hr, p_strata)
+      run_rep(i, sc, hr, p_strata, c(210, 350))
     }, .options = furrr_options(seed = TRUE, chunk_size = 25))
     
-    ever_c <- mean(sapply(pc_reps, function(r) r$ever_reject_cox_no), na.rm = TRUE)
-    conv_c <- mean(sapply(pc_reps, function(r) r$cox_conv_no), na.rm = TRUE)
+    pow_lr <- mean(sapply(pc_reps, function(r) r$ever_reject_lr_no), na.rm = TRUE)
     n_ev <- mean(sapply(pc_reps, function(r) r$n_events), na.rm = TRUE)
-    cat(sprintf("  Sc%d: events=%.0f power=%.3f conv=%.3f\n", sc, n_ev, ever_c, conv_c))
+    cat(sprintf("  Sc%d: events=%.0f LR power=%.3f\n", sc, n_ev, pow_lr))
     flush(stdout())
   }
 }
-cat("\nProof of concept complete — proceeding to full runs.\n")
+cat("\nProof of concept complete.\n")

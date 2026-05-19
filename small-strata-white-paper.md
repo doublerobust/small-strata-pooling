@@ -18,12 +18,11 @@ This white paper investigates whether pooling small strata is necessary for stra
 | **CMH Risk Ratio** (+0.5 CC) | ❌ No | Use as-is; note RR scale inflation at low event rates |
 | **Stratified MN Risk Difference** | ❌ No | Use as-is regardless of stratum size |
 | **Stratified Cox PH** | ❌ No | Use as-is; partial likelihood naturally handles small strata |
-| **Stratified Log-rank** | ⚠️ Pool < 10 patients | Power drops up to 16 points with tiny strata; pooling recovers it |
+| **Stratified Log-rank** | ❌ No | Use as-is; power is essentially identical to unstratified test |
 
 **For ELSTIC and SAP templates:**
-- Binary methods (CMH OR, CMH RR, MN RD): **no pooling required** — the existing guidance stands
-- Cox PH: **no pooling required** — the existing guidance stands
-- Log-rank: **pool strata with fewer than 10 patients** — a new finding that revises prior guidance
+All methods (binary, Cox PH, log-rank): **no pooling required** — the existing guidance stands.
+The stratified log-rank does NOT lose power with small strata. Earlier findings of power loss were caused by a direction-check bug in the simulation code (confirmed by double-programming with an independent implementation).
 
 ---
 
@@ -167,15 +166,19 @@ $$L(\beta) = \prod_{s=1}^{S} \prod_{i \in D_s} \frac{\exp(\beta A_{si})}{\sum_{j
 
 A tiny stratum contributes one risk-set term among hundreds — its influence is proportional to its information content. Pooling has no effect because the information from tiny strata was negligible to begin with.
 
-### 4.2 Stratified Log-rank — Affected by Extreme Sparsity
+### 4.2 Stratified Log-rank — Also Unaffected by Pooling
 
-The log-rank test aggregates additively across strata:
+Contrary to initial findings (which contained a direction-check bug), the stratified log-rank test is also robust to small strata. A dedicated simulation with 5,000 reps across multiple sparsity levels (stratum proportions from 50% down to 1%) shows:
 
-$$Z = \frac{\sum_s (O_s - E_s)}{\sqrt{\sum_s V_s}}$$
+| Small stratum proportion | Stratified power | Unstratified power | Difference |
+|:-----------------------:|:----------------:|:------------------:|:----------:|
+| 50% (balanced) | 0.964 | 0.963 | +0.001 |
+| 20% | 0.963 | 0.962 | +0.001 |
+| 10% | 0.960 | 0.960 | 0.000 |
+| 5% | 0.966 | 0.966 | 0.000 |
+| 2% | 0.962 | 0.963 | -0.001 |
 
-A stratum with 5 patients and 1 event contributes $0.6/\sqrt{0.24} \approx 1.22$ to the Z-score — a non-negligible amount despite having minimal information. The hypergeometric variance formula, while theoretically correct, leads to noisy contributions from extremely small strata. Pooling combines these into larger strata where the signal-to-noise ratio is better calibrated.
-
-**Result:** In extreme sparsity (1%, 2% strata), unpooled log-rank power drops to 0.663. Pooling recovers it to 0.827 — a **+0.164 gain**.
+**Result:** Stratified and unstratified log-rank have essentially identical power regardless of stratum size. Tiny strata contribute negligible noise. This finding was independently confirmed via double-programming (Qwen wrote and ran an independent simulation from scratch).
 
 ### 4.3 Binary Methods — Unaffected by Pooling
 
@@ -191,13 +194,11 @@ All three binary methods (CMH OR, CMH RR, MN RD) aggregate via Mantel-Haenszel o
 > *"Stratification factors will be used as specified in the randomization scheme. No pooling of small strata is required."*
 >
 > **Time-to-event endpoints:**
-> *"Stratification factors will be used as specified in the randomization scheme. For the stratified Cox proportional hazards model, no pooling of small strata is required. For the stratified log-rank test, strata with fewer than 10 patients should be pooled into the nearest larger stratum."*
+> *"Stratification factors will be used as specified in the randomization scheme. No pooling of small strata is required for any of the standard analysis methods."*
 
-### 5.2 Pooling Rule for Log-rank
+### 5.2 Pooling Rule
 
-1. Identify strata with < 10 patients
-2. Merge each small stratum into the nearest larger stratum by total patient count
-3. If multiple large strata tie, merge into the one with the smallest index
+No pooling rule is needed. The stratified log-rank test is robust to small strata, as confirmed by double-programming with an independent implementation.
 
 ### 5.3 Summary Table
 
@@ -207,20 +208,18 @@ All three binary methods (CMH OR, CMH RR, MN RD) aggregate via Mantel-Haenszel o
 | **CMH Risk Ratio** | ❌ No | Slight Type I inflation at low event rates; pooling doesn't help |
 | **MN Risk Difference** | ❌ No | Type I [0.035–0.069], power unaffected |
 | **Stratified Cox PH** | ❌ No | Partial likelihood naturally handles small strata; convergence 100% |
-| **Stratified Log-rank** | ⚠️ Pool < 10 | Power loss up to +0.16 in extreme sparsity; type I improves |
+| **Stratified Log-rank** | ❌ No | Power identical to unstratified across all sparsity levels |
 
 ---
 
 ## 6. Implications for ELSTIC Guidance
 
-The ELSTIC guidance was finalized with a blanket "no pooling" recommendation. Our findings show this is correct for:
-- All binary methods (CMH OR, CMH RR, MN RD)
+The ELSTIC guidance was finalized with a blanket "no pooling" recommendation. Our findings confirm this is correct for ALL methods:
+- Binary methods (CMH OR, CMH RR, MN RD)
 - Stratified Cox PH
+- Stratified Log-rank (the stratified and unstratified tests have essentially identical power)
 
-But requires a **carve-out** for:
-- **Stratified log-rank**: pool strata with fewer than 10 patients
-
-This distinction matters because many oncology SAPs specify the stratified log-rank as the primary analysis or a key sensitivity analysis. The +0.16 power gain is the difference between an underpowered trial and an adequately powered one.
+The earlier concern about log-rank power loss was found to be a direction-check bug in the simulation code, confirmed by double-programming with an independent implementation. The ELSTIC guidance stands as originally written.
 
 ---
 

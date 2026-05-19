@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
-# Survival: Small Strata Pooling — Full Simulation Run (10K Type I + 5K Power)
-# This script assumes run_survival_simulation.R has the functions defined
+# Survival: Small Strata Pooling — Full Simulation Run
+# 2-look OBF (60%, 100%) — realistic oncology GSD design
+# Log-rank canonical test for GSD decisions
 source("run_survival_simulation.R")
 
 # ── Full Type I error run (HR = 1.0, 10,000 reps) ──
@@ -11,4 +12,5 @@ run_sim(hr = 0.65, n_reps = 5000, sim_label = "Power")
 
 cat("\n═══════════════════════════════════════════════\n")
 cat("FULL SIMULATION COMPLETE\n")
+cat(Sys.time(), "\n")
 cat("═══════════════════════════════════════════════\n")

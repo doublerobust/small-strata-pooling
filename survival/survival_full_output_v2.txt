@@ -1,0 +1,77 @@
+Loading required package: future
+
+Attaching package: ‘future’
+
+The following object is masked from ‘package:survival’:
+
+    cluster
+
+═══ Phase 1: Code Test (2 reps) ═══
+  Scenario 1: n=500 events=346 strata=117,120,121,142
+  Scenario 2: n=500 events=363 strata=22,178,154,146
+  OK: Data generation works
+  Analysis: 2 looks
+    Look 1: events=188 LR p=0.5987
+    Look 2: events=313 LR p=0.0042
+  OK: Analysis pipeline works
+
+═══ Phase 2: Proof of Concept (100 reps) ═══
+
+── HR=1.00 ──
+  Sc1: events=350 LR power=0.050
+  Sc2: events=348 LR power=0.130
+
+── HR=0.65 ──
+  Sc1: events=312 LR power=0.920
+  Sc2: events=312 LR power=0.790
+
+Proof of concept complete.
+
+═══ Type I Error (HR=1.00, 10000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 348
+  LR (canonical GSD): no pool=0.0613 | pool=0.0613 | diff=0.0000
+  Cox HR: no pool=1.0070 | pool=1.0070 | SE: 0.1081,0.1081
+
+── Scenario 2: 1 small (5%) ──
+  Events: 348
+  LR (canonical GSD): no pool=0.0568 | pool=0.0567 | diff=-0.0001
+  Cox HR: no pool=1.0075 | pool=1.0075 | SE: 0.1081,0.1081
+
+── Scenario 3: 2 small (3%) ──
+  Events: 348
+  LR (canonical GSD): no pool=0.0618 | pool=0.0619 | diff=0.0001
+  Cox HR: no pool=1.0074 | pool=1.0074 | SE: 0.1081,0.1081
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 348
+  LR (canonical GSD): no pool=0.0611 | pool=0.0580 | diff=-0.0031
+  Cox HR: no pool=1.0049 | pool=1.0048 | SE: 0.1081,0.1079
+
+═══ Power (HR=0.65, 5000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 311
+  LR (canonical GSD): no pool=0.9392 | pool=0.9392 | diff=0.0000
+  Cox HR: no pool=0.6700 | pool=0.6700 | SE: 0.1157,0.1157
+
+── Scenario 2: 1 small (5%) ──
+  Events: 311
+  LR (canonical GSD): no pool=0.7718 | pool=0.7718 | diff=0.0000
+  Cox HR: no pool=0.6688 | pool=0.6688 | SE: 0.1156,0.1156
+
+── Scenario 3: 2 small (3%) ──
+  Events: 311
+  LR (canonical GSD): no pool=0.7194 | pool=0.7304 | diff=0.0110
+  Cox HR: no pool=0.6704 | pool=0.6704 | SE: 0.1155,0.1155
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 311
+  LR (canonical GSD): no pool=0.6446 | pool=0.8204 | diff=0.1758
+  Cox HR: no pool=0.6703 | pool=0.6703 | SE: 0.1155,0.1153
+
+═══════════════════════════════════════════════
+FULL SIMULATION COMPLETE
+1779200962 
+═══════════════════════════════════════════════

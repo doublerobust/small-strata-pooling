@@ -1,0 +1,64 @@
+Loading required package: future
+
+Attaching package: ‘future’
+
+The following object is masked from ‘package:survival’:
+
+    cluster
+
+═══ Phase 1: Code Test (2 reps) ═══
+  Scenario 1: n=500 events=346 strata=117,120,121,142
+  Scenario 2: n=500 events=363 strata=22,178,154,146
+  OK: Data generation works
+  Analysis: 1 looks
+    Look 1: events=210 LR p=0.6038
+  OK: Analysis pipeline works
+
+═══ Phase 2: Proof of Concept (100 reps) ═══
+
+── HR=1.00 ──
+  Sc1: events=350 LR power=0.040
+  Sc2: events=348 LR power=0.090
+
+── HR=0.65 ──
+  Sc1: events=312 LR power=0.110
+  Sc2: events=312 LR power=0.070
+
+Proof of concept complete.
+═══ Type I Error (HR=1.00, 10000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 348
+  LR: no pool=0.0316 | pool=0.0316 | diff=0.0000
+
+── Scenario 2: 1 small (5%) ──
+  Events: 348
+  LR: no pool=0.0351 | pool=0.0350 | diff=-0.0001
+
+── Scenario 3: 2 small (3%) ──
+  Events: 348
+  LR: no pool=0.0324 | pool=0.0326 | diff=0.0002
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 348
+  LR: no pool=0.0404 | pool=0.0352 | diff=-0.0052
+
+═══ Power (HR=0.65, 5000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 311
+  LR: no pool=0.0668 | pool=0.0668 | diff=0.0000
+
+── Scenario 2: 1 small (5%) ──
+  Events: 311
+  LR: no pool=0.0506 | pool=0.0506 | diff=0.0000
+
+── Scenario 3: 2 small (3%) ──
+  Events: 311
+  LR: no pool=0.0524 | pool=0.0514 | diff=-0.0010
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 311
+  LR: no pool=0.0556 | pool=0.0576 | diff=0.0020
+
+DONE
