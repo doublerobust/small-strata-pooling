@@ -1,0 +1,40 @@
+Loading required package: future
+
+Attaching package: ‘future’
+
+The following object is masked from ‘package:survival’:
+
+    cluster
+
+═══ Phase 1: Code Test (2 reps) ═══
+  Scenario 1: n=500 events=346 strata=117,120,121,142
+  Scenario 2: n=500 events=363 strata=22,178,154,146
+  OK: Data generation works
+  Analysis: 1 looks
+    Look 1: events=210 LR p=0.6038
+  OK: Analysis pipeline works
+
+═══ Phase 2: Proof of Concept (100 reps) ═══
+
+── HR=1.00 ──
+  Sc1: events=350 LR power=0.020
+  Sc2: events=348 LR power=0.030
+
+── HR=0.65 ──
+  Sc1: events=312 LR power=0.100
+  Sc2: events=312 LR power=0.050
+
+Proof of concept complete.
+═══ FINAL CORRECTED RESULTS ═══
+
+--- Type I Error (HR=1.0, 10000 reps) ---
+Sc1 Balanced: 0.0264
+Sc2 1 small (5%): 0.0234
+Sc3 2 small (3%): 0.0250
+Sc4 2 tiny (1%,2%): 0.0269
+
+--- Power (HR=0.65, 5000 reps) ---
+Sc1 Balanced: 0.9642
+Sc2 1 small (5%): 0.9664
+Sc3 2 small (3%): 0.9702
+Sc4 2 tiny (1%,2%): 0.9666

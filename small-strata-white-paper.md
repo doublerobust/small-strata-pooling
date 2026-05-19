@@ -223,46 +223,13 @@ The earlier concern about log-rank power loss was found to be a direction-check 
 
 ---
 
-## Appendix A: Log-rank Pooling — Mathematical Explanation
+## Appendix A: Log-rank Test Robustness to Small Strata
 
-### The Additive Aggregation Problem
+The stratified log-rank test is robust to small strata. The earlier concern about power loss was found to be a direction-check bug in the simulation code (using only the first stratum's O-E instead of the total across all strata). This was identified through the scientific process and confirmed by double-programming with an independent implementation.
 
-The stratified log-rank test statistic:
-
-$$Z = \frac{\sum_{s=1}^{S} (O_s - E_s)}{\sqrt{\sum_{s=1}^{S} V_s}}$$
-
-where for each stratum $s$:
-
-$$E_s = \frac{n_{1s} d_s}{n_s} \quad\quad V_s = \frac{n_{1s} n_{0s} d_s (n_s - d_s)}{n_s^2 (n_s - 1)}$$
-
-### Concrete Example: Scenario 4 (1% = 5 patients)
-
-A stratum with $n_{1s} = 2$, $n_{0s} = 3$, $d_s = 1$:
-
-$$O_s - E_s = 1 - \frac{2 \cdot 1}{5} = 0.6$$
-
-$$V_s = \frac{2 \cdot 3 \cdot 1 \cdot 4}{5^2 \cdot 4} = 0.24$$
-
-$$\frac{|O_s - E_s|}{\sqrt{V_s}} = \frac{0.6}{\sqrt{0.24}} \approx 1.22$$
-
-A single event in a 5-patient stratum contributes 1.22 to the overall Z-score. The same event in a 100-patient stratum contributes about 0.28 to the Z-score. **The tiny stratum is over 4 times more influential per event.**
-
-### Why Pooling Fixes It
-
-Pooling the 5-patient stratum (1%) and 10-patient stratum (2%) into a 250-patient stratum:
-
-- The merged stratum has $n_{1s} \approx 125$, $n_{0s} \approx 125$, $d_s \approx 80$
-- A single event now contributes $|O - E|/\sqrt{V} \approx 0.11$
-- The hypergeometric approximation is accurate at this sample size
-- Signal-to-noise improves because $V_s$ grows linearly with $n_s$
-
-### Why Cox PH Doesn't Have This Problem
-
-Cox PH's partial likelihood is multiplicative:
-
-$$L(\beta) = \prod_{s} \prod_{i \in D_s} \frac{\exp(\beta A_{si})}{\sum_{j \in R_s(t_{si})} \exp(\beta A_{sj})}$$
-
-Each event in a 5-patient stratum contributes 1 term in a product of ~300 terms. Its influence is automatically proportional to its information. Pooling changes nothing because the tiny stratum's contribution was negligible to begin with.
+**Key references for the stratified log-rank test properties:**
+- Schoenfeld (1981). *The asymptotic properties of rank tests.* Biometrika.
+- Andersen, Borgan, Gill & Keiding (1993). *Statistical Models Based on Counting Processes.* Springer.
 
 ---
 
