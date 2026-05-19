@@ -266,7 +266,7 @@ The stratified log-rank test is robust to small strata. Power is essentially ide
 | Dropout | Exponential, 5%/year |
 | Treatment effect | HR = 0.65 (Power) / HR = 1.0 (Type I) |
 | Design | Fixed (no interim looks) |
-| Boundaries | `gsDesign(k=3, test.type=2, alpha=0.05, sfu="OF")` |
+| Significance | One-sided $\alpha = 0.025$ |
 | Seed scheme | `20260519 + scenario*1e6 + hr_id*1e5 + rep` |
 | Parallel | `furrr`, 11 workers, chunk_size=200 |
 | Convergence | 100% across all reps |
@@ -309,7 +309,7 @@ small-strata/
 
 ## References
 
-- O'Brien & Fleming (1979). *A multiple testing procedure for clinical trials.* Biometrics.
+
 - Greenland & Robins (1985). *Estimation of a common effect parameter from sparse follow-up data.* Biometrics.
 - Miettinen & Nurminen (1985). *Comparative analysis of two rates.* Statistics in Medicine.
 - Mantel & Haenszel (1959). *Statistical aspects of the analysis of data from retrospective studies of disease.* JNCI.
