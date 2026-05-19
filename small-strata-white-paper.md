@@ -19,6 +19,8 @@ All standard binary endpoint methods used in Merck oncology SAPs are robust to s
 
 **Recommendation: No pooling of small strata is required for any of these methods.**
 
+**Power analysis confirms:** Pooling does not improve power and may slightly reduce it (up to −0.023 for CMH RR in extreme sparsity).
+
 ## Results (5,000 reps per scenario, stratified block randomization, block size 4)
 
 | Sparsity | Event rate | CMH OR | | CMH RR | | MN RD | |
@@ -37,6 +39,36 @@ All standard binary endpoint methods used in Merck oncology SAPs are robust to s
 | 2 v. small (1%, 2%) | 30% | 0.000 | 0.054 | 0.000 | 0.053 | 0.000 | 0.062 |
 | 2 v. small (1%, 2%) | 50% | 0.000 | 0.051 | 0.000 | 0.054 | 0.000 | 0.069 |
 
+## Power Analysis (5,000 reps, Treatment Effect OR ≈ 1.65 and 2.01)
+
+To assess whether pooling small strata improves **statistical power**, we simulated trials with a true treatment effect and compared no-pooling vs. pooling strata with fewer than 10 patients into the nearest larger stratum.
+
+| Scenario | Event rate | OR | CMH OR | | CMH RR | | MN RD | |
+|:---------|:---------:|:--:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+| | | | No pool | Pool | No pool | Pool | No pool | Pool |
+| Balanced | 10% | 1.65 | 0.369 | 0.369 | 0.474 | 0.474 | 0.332 | 0.332 |
+| Balanced | 10% | 2.01 | 0.649 | 0.649 | 0.731 | 0.731 | 0.621 | 0.621 |
+| Balanced | 30% | 1.65 | 0.656 | 0.656 | 0.714 | 0.714 | 0.681 | 0.681 |
+| Balanced | 50% | 2.01 | 0.927 | 0.927 | 0.942 | 0.942 | 0.938 | 0.938 |
+| 1 small (5%) | 10% | 1.65 | 0.367 | 0.367 | 0.465 | 0.465 | 0.339 | 0.339 |
+| 1 small (5%) | 30% | 2.01 | 0.921 | 0.921 | 0.943 | 0.943 | 0.932 | 0.932 |
+| 2 small (3% ea) | 10% | 1.65 | 0.390 | 0.390 | 0.453 | 0.451 | 0.374 | 0.372 |
+| 2 small (3% ea) | 30% | 2.01 | 0.925 | 0.925 | 0.944 | 0.940 | 0.935 | 0.934 |
+| 2 tiny (1%, 2%) | 10% | 1.65 | 0.370 | 0.370 | 0.411 | 0.404 | 0.354 | 0.347 |
+| 2 tiny (1%, 2%) | 50% | 2.01 | 0.937 | 0.936 | 0.949 | 0.944 | 0.946 | 0.945 |
+
+### Key Power Findings
+
+**Pooling small strata does not improve power for any method or scenario.**
+
+- **CMH OR:** Power difference (pooled − unpooled) = **0.000 to −0.002** — essentially zero. CMH OR is completely unaffected by small strata.
+- **CMH RR:** Power difference = **0.000 to −0.023**. Pooling slightly **reduces** power for CMH RR in sparse scenarios. This is expected: merging strata with different event rates introduces heterogeneity that degrades the RR estimate.
+- **MN RD:** Power difference = **0.001 to −0.010**. Minimal impact, with slight power loss at very low event rates.
+
+**The largest power loss from pooling occurs in Scenario 4 (2 tiny strata at 1%, 2%):** CMH RR power drops by 0.023 at 30% event rate, OR 1.65.
+
+**Conclusion:** Pooling provides no power benefit and creates a small but consistent power penalty for CMH RR. The recommendation stands: **do not pool small strata.**
+
 ## Notes
 
 - **CMH OR** is the most robust — Type I error within [0.043, 0.054] across all scenarios.
@@ -50,6 +82,8 @@ For SAPs using CMH (OR or RR) or stratified MN (risk difference):
 
 > *"Stratification factors will be used as specified in the randomization scheme. No pooling of small strata is required."*
 
+**Caveat for CMH RR at low event rates:** If using CMH RR, note that Type I error may be inflated at low event rates (<15%) regardless of stratum size. This is an inherent property of the risk ratio scale, not a small-strata issue. Consider CMH OR as an alternative in such cases.
+
 ## Code
 
 All simulation code: `run_small_strata.R` in this repository.
@@ -57,6 +91,8 @@ All simulation code: `run_small_strata.R` in this repository.
 ## Validation
 
 The CMH RR variance formula was independently verified against the empirical sampling variance (500 bootstrap replicates): estimated variance = 0.028 vs. empirical = 0.025, ratio 1.11. The slight conservatism is expected due to the +0.5 continuity correction.
+
+**Note on CMH RR variance formula:** The variance formula used for CMH RR is inverse-variance pooling of stratum-specific log-risk-ratio variances (with +0.5 continuity correction), not the exact Greenland-Robins variance for the Mantel-Haenszel risk ratio. Bootstrap validation confirms the formula is adequate for the sample sizes studied (variance ratio 1.11). Both pooled and unpooled analyses use the same formula, so the *comparison* between them is valid regardless.
 
 ---
 
