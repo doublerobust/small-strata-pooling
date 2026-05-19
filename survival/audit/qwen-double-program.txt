@@ -1,0 +1,70 @@
+=== Double-Programming Verification ===
+Workers: 11
+Reps: 5000 
+
+========== PART 1: BINARY ENDPOINTS ==========
+
+  Strata config: Balanced (4 strata) 
+    Probabilities: 0.25, 0.25, 0.25, 0.25 
+  Running 5000 replications...
+    Type I error (CMH OR / mantelhaen.test): 0 %
+    Type I error (CMH RR):                    4.24 %
+    Type I error (MN RD):                     4.9 %
+
+  Strata config: Sparse (4 strata) 
+    Probabilities: 0.01, 0.02, 0.485, 0.485 
+  Running 5000 replications...
+    Type I error (CMH OR / mantelhaen.test): 0 %
+    Type I error (CMH RR):                    4.22 %
+    Type I error (MN RD):                     5.14 %
+
+========== PART 2: TIME-TO-EVENT ==========
+
+  Type I error (balanced 8 strata, HR=1.0):
+  Scenario: Balanced 8-strata Type I (HR = 1 )
+    Strata probs: 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 
+    Running 5000 replications...
+    Result: 2.5 %
+
+  Power (balanced 8 strata, HR=0.65):
+  Scenario: Balanced 8-strata Power (HR = 0.65 )
+    Strata probs: 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 
+    Running 5000 replications...
+    Result: 98.8 %
+
+  Type I error (sparse 8 strata, HR=1.0):
+  Scenario: Sparse 8-strata Type I (HR = 1 )
+    Strata probs: 0.01, 0.01, 0.1633, 0.1633, 0.1633, 0.1633, 0.1633, 0.1633 
+    Running 5000 replications...
+    Result: 2.44 %
+
+  Power (sparse 8 strata, HR=0.65):
+  Scenario: Sparse 8-strata Power (HR = 0.65 )
+    Strata probs: 0.01, 0.01, 0.1633, 0.1633, 0.1633, 0.1633, 0.1633, 0.1633 
+    Running 5000 replications...
+    Result: 98.7 %
+
+
+========== SUMMARY ==========
+
+--- Part 1: Binary Endpoints (Type I error at two-sided alpha=0.05) ---
+  Balanced strata (0.25 each):
+    CMH OR (mantelhaen.test):      0 %
+    CMH RR:                        4.24 %
+    MN RD:                         4.9 %
+
+  Sparse strata (0.01, 0.02, 0.485, 0.485):
+    CMH OR (mantelhaen.test):      0 %
+    CMH RR:                        4.22 %
+    MN RD:                         5.14 %
+
+--- Part 2: Time-to-Event (one-sided alpha=0.025) ---
+  Balanced 8-strata:
+    Type I error (HR=1.0):         2.5 %
+    Power (HR=0.65):               98.8 %
+
+  Sparse 8-strata (0.01, 0.01, rep(0.98/6,6)):
+    Type I error (HR=1.0):         2.44 %
+    Power (HR=0.65):               98.7 %
+
+=== Done ===
