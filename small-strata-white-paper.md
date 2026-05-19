@@ -111,7 +111,7 @@ Pooling small strata does **not improve power** for any binary method:
 |-----------|-------|
 | N | 500 |
 | Randomization | 1:1, stratified block (block size 4) |
-| Strata | 4 (2 binary factors) |
+| Strata | 8 (3 binary factors → 8 strata) |
 | Accrual | 18 months, uniform, ~28 patients/month |
 | Control median OS | 14 months (Weibull, shape=1) |
 | Treatment effect | HR = 0.65 (power) / 1.0 (Type I) |
@@ -126,21 +126,21 @@ Pooling small strata does **not improve power** for any binary method:
 
 | Sparsity | Log-rank (No Pool) | Log-rank (Pool) | Diff |
 |:---------|:-----------------:|:---------------:|:----:|
-| Balanced | 0.0264 | 0.0264 | 0.0000 |
-| 1 small (5%) | 0.0234 | 0.0234 | 0.0000 |
-| 2 small (3%) | 0.0250 | 0.0250 | 0.0000 |
-| 2 tiny (1%,2%) | 0.0269 | 0.0273 | +0.0004 |
+| Balanced | 0.0250 | 0.0250 | 0.0000 |
+| 1 small (3%) | 0.0242 | 0.0242 | 0.0000 |
+| 2 small (2%) | 0.0248 | 0.0248 | 0.0000 |
+| 2 tiny (1%) | 0.0278 | 0.0278 | 0.0000 |
 
 Type I error is well-controlled at the one-sided 0.025 level. Pooling has no effect on Type I error.
 
 ### 3.4 Power Results (5,000 reps, HR = 0.65)
 
-| Sparsity | Cox PH | | Log-rank (No Pool) | Log-rank (Pool) | Diff |
-|:---------|:-----:|:-----:|:-----------------:|:---------------:|:----:|
-| Balanced | 0.964 | 0.964 | 0.9642 | 0.9642 | 0.0000 |
-| 1 small (5%) | 0.966 | 0.966 | 0.9664 | 0.9664 | 0.0000 |
-| 2 small (3%) | 0.970 | 0.970 | 0.9702 | 0.9704 | +0.0002 |
-| 2 tiny (1%,2%) | 0.967 | 0.966 | 0.9666 | 0.9664 | −0.0002 |
+| Sparsity | Log-rank (No Pool) | Log-rank (Pool) | Diff | Min stratum |
+|:---------|:-----------------:|:---------------:|:----:|:-----------:|
+| Balanced | 0.964 | 0.964 | 0.000 | 62 |
+| 1 small (3%) | 0.958 | 0.958 | 0.000 | 15 |
+| 2 small (2%) | 0.960 | 0.960 | 0.000 | 10 |
+| 2 tiny (1%) | **0.963** | **0.963** | **0.000** | **5** |
 
 **Power is essentially identical across ALL sparsity levels.** The stratified log-rank test is robust to small strata.
 
@@ -259,7 +259,8 @@ The stratified log-rank test is robust to small strata. Power is essentially ide
 | Reps | 10,000 (Type I) + 5,000 (Power) |
 | N | 500 |
 | Randomization | 1:1 stratified block, size 4 |
-| Scenario proportions | Same as binary |
+| Strata | 8 (3 binary factors → 8 strata) |
+| Scenario proportions | Same pattern as binary |
 | Control median | 14 months (Weibull, shape=1, scale=14/ln(2)=20.20) |
 | Accrual | Uniform 0–18 months |
 | Cutoff | 36 months |
