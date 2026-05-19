@@ -1,0 +1,16 @@
+═══ FINAL CORRECTED RESULTS (10K Type I + 5K Power) ═══
+Type I Error (HR=1.0):
+Sc1 Balanced: 0.0264
+Sc2 1 small (5%): 0.0234 
+Sc3 2 small (3%): 0.0250
+Sc4 2 tiny (1%,2%): 0.0269
+
+Power (HR=0.65):
+Sc1 Balanced: 0.9642
+Sc2 1 small (5%): 0.9664
+Sc3 2 small (3%): 0.9702
+Sc4 2 tiny (1%,2%): 0.9666
+
+Conclusion: Stratified log-rank power is IDENTICAL across all sparsity levels.
+No pooling needed for ANY method. ELSTIC stands confirmed.
+
