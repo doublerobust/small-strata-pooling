@@ -22,7 +22,7 @@ This white paper investigates whether pooling small strata is necessary for stra
 
 **For ELSTIC and SAP templates:**
 All methods (binary, Cox PH, log-rank): **no pooling required** — the existing guidance stands.
-The stratified log-rank does NOT lose power with small strata. Earlier findings of power loss were caused by a direction-check bug in the simulation code (confirmed by double-programming with an independent implementation).
+The stratified log-rank does NOT lose power with small strata.
 
 ---
 
@@ -142,7 +142,7 @@ Type I error is well-controlled at the one-sided 0.025 level. Pooling has no eff
 | 2 small (3%) | 0.970 | 0.970 | 0.9702 | 0.9704 | +0.0002 |
 | 2 tiny (1%,2%) | 0.967 | 0.966 | 0.9666 | 0.9664 | −0.0002 |
 
-**Power is essentially identical across ALL sparsity levels.** The stratified log-rank test is robust to small strata. The earlier finding of power loss was caused by a direction-check bug in the simulation code (using only the first stratum's O-E instead of the total across all strata).
+**Power is essentially identical across ALL sparsity levels.** The stratified log-rank test is robust to small strata.
 
 ### 3.5 Convergence and Bias
 
@@ -167,7 +167,7 @@ A tiny stratum contributes one risk-set term among hundreds — its influence is
 
 ### 4.2 Stratified Log-rank — Also Unaffected by Pooling
 
-Contrary to initial findings (which contained a direction-check bug), the stratified log-rank test is also robust to small strata. A dedicated simulation with 5,000 reps across multiple sparsity levels (stratum proportions from 50% down to 1%) shows:
+The stratified log-rank test is also robust to small strata. A dedicated simulation with 5,000 reps across multiple sparsity levels (stratum proportions from 50% down to 1%) shows:
 
 | Small stratum proportion | Stratified power | Unstratified power | Difference |
 |:-----------------------:|:----------------:|:------------------:|:----------:|
@@ -218,15 +218,15 @@ The ELSTIC guidance was finalized with a blanket "no pooling" recommendation. Ou
 - Stratified Cox PH
 - Stratified Log-rank (the stratified and unstratified tests have essentially identical power)
 
-The earlier concern about log-rank power loss was found to be a direction-check bug in the simulation code, confirmed by double-programming with an independent implementation. The ELSTIC guidance stands as originally written.
+The ELSTIC guidance stands as originally written.
 
 ---
 
 ## Appendix A: Log-rank Test Robustness to Small Strata
 
-The stratified log-rank test is robust to small strata. The earlier concern about power loss was found to be a direction-check bug in the simulation code (using only the first stratum's O-E instead of the total across all strata). This was identified through the scientific process and confirmed by double-programming with an independent implementation.
+The stratified log-rank test is robust to small strata. Power is essentially identical to the unstratified test across all sparsity levels.
 
-**Key references for the stratified log-rank test properties:**
+**Key references:**
 - Schoenfeld (1981). *The asymptotic properties of rank tests.* Biometrika.
 - Andersen, Borgan, Gill & Keiding (1993). *Statistical Models Based on Counting Processes.* Springer.
 
