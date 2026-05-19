@@ -1,0 +1,85 @@
+Loading required package: future
+
+Attaching package: ‘future’
+
+The following object is masked from ‘package:survival’:
+
+    cluster
+
+═══ Phase 1: Code Test (2 reps) ═══
+  Scenario 1: n=500 events=346 strata=117,120,121,142
+  Scenario 2: n=500 events=363 strata=22,178,154,146
+  OK: Data generation works
+  Analysis: 3 looks
+    Look 1: Cox z=0.711 LR p=0.762
+    Look 2: Cox z=-0.339 LR p=0.633
+    Look 3: Cox z=-2.629 LR p=0.004
+  OK: Analysis pipeline works
+
+═══ Phase 2: Proof of Concept (100 reps) ═══
+
+── HR=1.00 ──
+  Sc1: events=350 power=0.130 conv=1.000
+  Sc2: events=348 power=0.150 conv=1.000
+
+── HR=0.65 ──
+  Sc1: events=312 power=0.950 conv=1.000
+  Sc2: events=312 power=0.980 conv=1.000
+
+Proof of concept complete — proceeding to full runs.
+
+═══ Type I Error (HR=1.00, 10000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 348
+  Cox:    no pool=0.1214 | pool=0.1214 | diff=0.0000 | conv=1.000,1.000
+  LR:     no pool=0.0725 | pool=0.0725 | diff=0.0000 | conv=1.000,1.000
+  HR:     no pool=1.0065 | pool=1.0065 | SE: 0.1081,0.1081
+
+── Scenario 2: 1 small (5%) ──
+  Events: 348
+  Cox:    no pool=0.1220 | pool=0.1226 | diff=0.0006 | conv=1.000,1.000
+  LR:     no pool=0.0777 | pool=0.0764 | diff=-0.0013 | conv=1.000,1.000
+  HR:     no pool=1.0074 | pool=1.0074 | SE: 0.1081,0.1081
+
+── Scenario 3: 2 small (3%) ──
+  Events: 348
+  Cox:    no pool=0.1237 | pool=0.1234 | diff=-0.0003 | conv=1.000,1.000
+  LR:     no pool=0.0780 | pool=0.0714 | diff=-0.0066 | conv=1.000,1.000
+  HR:     no pool=1.0073 | pool=1.0073 | SE: 0.1081,0.1081
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 348
+  Cox:    no pool=0.1181 | pool=0.1186 | diff=0.0005 | conv=1.000,1.000
+  LR:     no pool=0.0953 | pool=0.0732 | diff=-0.0221 | conv=1.000,1.000
+  HR:     no pool=1.0046 | pool=1.0045 | SE: 0.1080,0.1079
+
+═══ Power (HR=0.65, 5000 reps) ═══
+
+── Scenario 1: Balanced ──
+  Events: 311
+  Cox:    no pool=0.9654 | pool=0.9654 | diff=0.0000 | conv=1.000,1.000
+  LR:     no pool=0.9226 | pool=0.9226 | diff=0.0000 | conv=1.000,1.000
+  HR:     no pool=0.6685 | pool=0.6685 | SE: 0.1157,0.1157
+
+── Scenario 2: 1 small (5%) ──
+  Events: 311
+  Cox:    no pool=0.9688 | pool=0.9686 | diff=-0.0002 | conv=1.000,1.000
+  LR:     no pool=0.7682 | pool=0.7724 | diff=0.0042 | conv=1.000,1.000
+  HR:     no pool=0.6677 | pool=0.6677 | SE: 0.1156,0.1156
+
+── Scenario 3: 2 small (3%) ──
+  Events: 311
+  Cox:    no pool=0.9750 | pool=0.9752 | diff=0.0002 | conv=1.000,1.000
+  LR:     no pool=0.7212 | pool=0.7432 | diff=0.0220 | conv=1.000,1.000
+  HR:     no pool=0.6695 | pool=0.6695 | SE: 0.1155,0.1155
+
+── Scenario 4: 2 tiny (1%,2%) ──
+  Events: 311
+  Cox:    no pool=0.9650 | pool=0.9664 | diff=0.0014 | conv=1.000,1.000
+  LR:     no pool=0.6632 | pool=0.8266 | diff=0.1634 | conv=1.000,1.000
+  HR:     no pool=0.6695 | pool=0.6695 | SE: 0.1155,0.1153
+
+═══════════════════════════════════════════════
+FULL SIMULATION COMPLETE
+═══════════════════════════════════════════════
