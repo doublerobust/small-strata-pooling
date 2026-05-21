@@ -105,6 +105,8 @@ Pooling small strata does **not improve power** for any binary method:
 | **Stratified Cox PH** | `coxph(Surv ~ trt + strata(stratum))` | Treatment as only covariate |
 | **Stratified Log-rank** | `survdiff(Surv ~ trt + strata(stratum))` | Fixed design, one-sided α=0.025 |
 
+> **Estimand note:** Stratified Cox and stratified log-rank estimate a *conditional* hazard ratio — the treatment effect conditional on the randomization strata. An unstratified analysis would target the *marginal* (population-average) hazard ratio. Due to the non-collapsibility of the hazard ratio, these are technically distinct estimands under ICH E9(R1) [ASA 2025]. In this paper, all comparisons are made within the same analysis type (stratified vs. stratified, unstratified vs. unstratified), so the estimand is consistent across comparator methods within each setting. The simulation uses a constant treatment effect (HR = 0.65) across all strata, meaning both conditional and marginal estimands converge to the same numeric truth.
+
 ### 3.2 Simulation Design
 
 | Parameter | Value |
@@ -178,6 +180,8 @@ The stratified log-rank test is also robust to small strata. A dedicated simulat
 | 2% | 0.962 | 0.963 | -0.001 |
 
 **Result:** Stratified and unstratified log-rank have essentially identical power regardless of stratum size. Tiny strata contribute negligible noise. This finding was independently confirmed via double-programming (Qwen wrote and ran an independent simulation from scratch).
+
+The observation that stratified and unstratified analyses produce nearly identical results under the simulation design is consistent with the estimand discussion in §3.1: with a constant treatment effect across strata, the conditional and marginal hazard ratios coincide, and the choice between stratified and unstratified estimators primarily affects precision, not the target of inference. In practice, when treatment effect heterogeneity may be present, the two approaches estimate distinct quantities and should be pre-specified accordingly [ASA 2025].
 
 ### 4.3 Binary Methods — Unaffected by Pooling
 
