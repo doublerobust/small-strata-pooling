@@ -310,6 +310,8 @@ small-strata/
 
 ## References
 
+[ASA 2025] ASA Oncology Estimand Working Group, Conditional and Marginal Effect Task Force. "Current practice on covariate adjustment and stratified analysis — based on survey results." *BMC Medical Research Methodology* (2025). DOI: 10.1186/s12874-025-02670-7.
+
 
 - Greenland & Robins (1985). *Estimation of a common effect parameter from sparse follow-up data.* Biometrics.
 - Miettinen & Nurminen (1985). *Comparative analysis of two rates.* Statistics in Medicine.
